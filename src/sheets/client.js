@@ -1,13 +1,24 @@
 import { google } from 'googleapis';
-import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: path.resolve('credentials/google-credentials.json'),
-  scopes: ['https://www.googleapis.com/auth/spreadsheets']
-});
+function getAuth() {
+  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    return new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    });
+  }
+  // fallback local
+  import path from 'path';
+  return new google.auth.GoogleAuth({
+    keyFile: path.resolve('credentials/google-credentials.json'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+  });
+}
 
+const auth = getAuth();
 const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
 
