@@ -48,7 +48,8 @@ export async function handleCommand(comando, args, sock, jid) {
       'Saudável': '🟢 Excelente! Mantenham o ritmo e aumentem a reserva.',
       'Atenção': '🟡 No caminho certo, mas há pontos a melhorar.',
       'Crítico': '🔴 Atenção necessária. Use /analise para orientações.',
-      'Emergência': '🚨 Situação crítica. Cortes imediatos são necessários.'
+      'Emergência': '🚨 Situação crítica. Cortes imediatos são necessários.',
+      'Sem dados': '⚪ Registre receitas e gastos para ver seu score real.'
     };
     msg += dicas[score.nivel] || '';
     return msg;

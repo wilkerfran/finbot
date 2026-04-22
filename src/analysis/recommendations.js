@@ -75,10 +75,13 @@ export async function calcularScoreFinanceiro(mes, ano) {
 
     let score = 100;
 
-    if (taxaPoupanca < 0) score -= 40;
-    else if (taxaPoupanca < 5) score -= 25;
-    else if (taxaPoupanca < 10) score -= 15;
-    else if (taxaPoupanca < 20) score -= 5;
+    if (totalReceitas === 0) {
+  return { score: 0, nivel: 'Sem dados', emoji: '⚪', taxaPoupanca: 0, saldo: 0, totalReceitas: 0, totalGastos: 0 };
+}
+if (taxaPoupanca < 0) score -= 40;
+else if (taxaPoupanca < 5) score -= 25;
+else if (taxaPoupanca < 10) score -= 15;
+else if (taxaPoupanca < 20) score -= 5;
 
     const orcamentos = await readSheet('Orcamento!A2:B20');
     let categoriasEstouradas = 0;
