@@ -3,3 +3,4 @@ auth/
 .env
 *.log
 finbot.db
+auth.zip
