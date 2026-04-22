@@ -1,7 +1,7 @@
 import { interpretarMensagem } from '../ai/parser.js';
-import { saveTransaction } from '../sheets/transactions.js';
+import { saveTransaction, verificarAlertaCategoria } from '../sheets/transactions.js';
 import { handleCommand } from '../commands/index.js';
-import { formatCurrency } from '../utils/formatter.js';
+import { formatCurrency, getCurrentMonth, getCurrentYear } from '../utils/formatter.js';
 import { savePendingConfirmation, getPendingConfirmation, clearPendingConfirmation } from '../utils/db.js';
 import { getConfig } from '../sheets/config.js';
 import logger from '../utils/logger.js';
@@ -18,22 +18,20 @@ export async function handleMessage(sock, msg) {
 
   const config = await getConfig();
 
-const senderLid = senderJid.replace('@lid', '').replace('@s.whatsapp.net', '');
+  const senderLid = senderJid.replace('@lid', '').replace('@s.whatsapp.net', '');
+  const lid1 = config.lid_usuario_1?.trim() || '';
+  const lid2 = config.lid_usuario_2?.trim() || '';
 
-const lid1 = config.lid_usuario_1?.trim() || '';
-const lid2 = config.lid_usuario_2?.trim() || '';
+  let nomeUsuario = 'Usuário';
+  if (lid1 && senderLid === lid1) {
+    nomeUsuario = config.nome_usuario_1 || 'Usuário 1';
+  } else if (lid2 && senderLid === lid2) {
+    nomeUsuario = config.nome_usuario_2 || 'Usuário 2';
+  } else {
+    console.log('LID não reconhecido:', senderLid);
+  }
 
-let nomeUsuario = 'Usuário';
-if (lid1 && senderLid === lid1) {
-  nomeUsuario = config.nome_usuario_1 || 'Usuário 1';
-} else if (lid2 && senderLid === lid2) {
-  nomeUsuario = config.nome_usuario_2 || 'Usuário 2';
-} else {
-  console.log('LID não reconhecido:', senderLid);
-  nomeUsuario = 'Usuário';
-}
-
-  // Verifica se há confirmação pendente
+  // Confirmação pendente
   if (texto.toLowerCase() === 'sim') {
     const pendente = getPendingConfirmation(senderJid);
     if (pendente) {
@@ -57,14 +55,14 @@ if (lid1 && senderLid === lid1) {
     const partes = texto.split(' ');
     const cmd = partes[0];
     const args = partes.slice(1);
-    const resposta = await handleCommand(cmd, args);
+    const resposta = await handleCommand(cmd, args, sock, jid);
     if (resposta) {
       await sock.sendMessage(jid, { text: resposta });
     }
     return;
   }
 
-  // Linguagem natural via Gemini
+  // Linguagem natural via IA
   try {
     const resultado = await interpretarMensagem(texto, nomeUsuario);
 
@@ -73,8 +71,25 @@ if (lid1 && senderLid === lid1) {
     if (resultado.tipo === 'gasto' || resultado.tipo === 'receita') {
       if (resultado.confianca >= 0.8) {
         await saveTransaction({ ...resultado, quem: nomeUsuario });
-        let resposta = resultado.resposta || `✅ *${formatCurrency(resultado.valor)}* registrado em ${resultado.categoria}`;
+
+        let resposta = resultado.resposta ||
+          `✅ *${formatCurrency(resultado.valor)}* registrado em ${resultado.categoria}`;
+
         if (resultado.alerta) resposta += `\n\n${resultado.alerta}`;
+
+        // Alerta de orçamento apenas para gastos
+        if (resultado.tipo === 'gasto') {
+          const alerta = await verificarAlertaCategoria(
+            resultado.categoria,
+            resultado.valor,
+            getCurrentMonth(),
+            getCurrentYear()
+          );
+          if (alerta) {
+            resposta += `\n\n${alerta.emoji} ${alerta.mensagem}`;
+          }
+        }
+
         await sock.sendMessage(jid, { text: resposta });
       } else {
         savePendingConfirmation(senderJid, resultado);
@@ -86,7 +101,6 @@ if (lid1 && senderLid === lid1) {
     }
 
     if (resultado.tipo === 'consulta') {
-      const { handleCommand } = await import('../commands/index.js');
       const intencaoParaComando = {
         ver_saldo: '/saldo',
         ver_resumo: '/resumo',
@@ -95,7 +109,7 @@ if (lid1 && senderLid === lid1) {
       };
       const cmd = intencaoParaComando[resultado.intencao];
       if (cmd) {
-        const resposta = await handleCommand(cmd, []);
+        const resposta = await handleCommand(cmd, [], sock, jid);
         if (resposta) await sock.sendMessage(jid, { text: resposta });
       }
     }

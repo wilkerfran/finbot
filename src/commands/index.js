@@ -4,7 +4,7 @@ import { comandoMeta } from './meta.js';
 import { setConfig } from '../sheets/config.js';
 import { getCurrentMonth, getCurrentYear } from '../utils/formatter.js';
 
-export async function handleCommand(comando, args) {
+export async function handleCommand(comando, args, sock, jid) {
   const cmd = comando.toLowerCase().trim();
 
   if (cmd === '/saldo') {
@@ -29,6 +29,37 @@ export async function handleCommand(comando, args) {
     await setConfig('modo_rigor', modoValido);
     const emojis = { Radical: '🔴', Moderado: '🟡', Razoavel: '🟢' };
     return `${emojis[modoValido]} Modo *${modoValido}* ativado!`;
+  }
+
+  if (cmd === '/score') {
+    const { calcularScoreFinanceiro } = await import('../analysis/recommendations.js');
+    const { getCurrentMonth, getCurrentYear, getMonthName } = await import('../utils/formatter.js');
+    const score = await calcularScoreFinanceiro(getCurrentMonth(), getCurrentYear());
+    if (!score) return '⚠️ Não foi possível calcular o score ainda. Registre alguns gastos primeiro.';
+    
+    let msg = `${score.emoji} *Score Financeiro — ${getMonthName(getCurrentMonth())}*\n\n`;
+    msg += `📊 Pontuação: *${score.score}/100 — ${score.nivel}*\n`;
+    msg += `💰 Receitas: R$${score.totalReceitas.toFixed(2)}\n`;
+    msg += `💸 Gastos: R$${score.totalGastos.toFixed(2)}\n`;
+    msg += `📈 Saldo: R$${score.saldo.toFixed(2)}\n`;
+    msg += `🏦 Poupança: ${score.taxaPoupanca}%\n\n`;
+    
+    const dicas = {
+      'Saudável': '🟢 Excelente! Mantenham o ritmo e aumentem a reserva.',
+      'Atenção': '🟡 No caminho certo, mas há pontos a melhorar.',
+      'Crítico': '🔴 Atenção necessária. Use /analise para orientações.',
+      'Emergência': '🚨 Situação crítica. Cortes imediatos são necessários.'
+    };
+    msg += dicas[score.nivel] || '';
+    return msg;
+  }
+
+  if (cmd === '/analise') {
+    const { gerarRecomendacoes } = await import('../analysis/recommendations.js');
+    await sock?.sendMessage?.(jid, { text: '🤔 Analisando suas finanças...' });
+    const recomendacao = await gerarRecomendacoes();
+    if (!recomendacao) return '⚠️ Registre alguns gastos primeiro para gerar uma análise.';
+    return `💡 *Análise Financeira Personalizada*\n\n${recomendacao}`;
   }
 
   if (cmd === '/ajuda') {

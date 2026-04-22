@@ -1,7 +1,6 @@
 import { appendRow, readSheet } from './client.js';
 import { formatDate, formatTime, getCurrentMonth, getCurrentYear } from '../utils/formatter.js';
 
-
 function generateId() {
   const now = new Date();
   return `txn_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${Date.now()}`;
@@ -53,4 +52,36 @@ export async function getGastosPorCategoria(mes, ano) {
     resultado[t.categoria] = (resultado[t.categoria] || 0) + t.valor;
   }
   return resultado;
+}
+
+export async function verificarAlertaCategoria(categoria, novoValor, mes, ano) {
+  try {
+    const gastosPorCategoria = await getGastosPorCategoria(mes, ano);
+    const gastoAtual = gastosPorCategoria[categoria] || 0;
+    const totalComNovo = gastoAtual + novoValor;
+
+    const orcamentos = await readSheet('Orcamento!A2:B20');
+    const orcamento = orcamentos.find(r => r[0] === categoria);
+    if (!orcamento || !orcamento[1]) return null;
+
+    const limite = parseFloat(orcamento[1]);
+    const percentual = (totalComNovo / limite) * 100;
+
+    if (percentual >= 100) {
+      return {
+        tipo: 'estourado',
+        emoji: '🚨',
+        mensagem: `*${categoria}* estourou o limite!\nGasto: R$${totalComNovo.toFixed(2)} / Limite: R$${limite.toFixed(2)} (${percentual.toFixed(0)}%)`
+      };
+    } else if (percentual >= 80) {
+      return {
+        tipo: 'alerta',
+        emoji: '⚠️',
+        mensagem: `*${categoria}* está em ${percentual.toFixed(0)}% do limite!\nGasto: R$${totalComNovo.toFixed(2)} / Limite: R$${limite.toFixed(2)}`
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
