@@ -2,10 +2,9 @@ import cron from 'node-cron';
 import logger from '../utils/logger.js';
 import { comandoResumo } from '../commands/resumo.js';
 import { comandoMeta } from '../commands/meta.js';
-import { gerarRecomendacoes, calcularScoreFinanceiro } from '../analysis/recommendations.js';
+import { gerarRecomendacoes, calcularScoreFinanceiro, gerarPlanejamentoProximoMes } from '../analysis/recommendations.js';
 import { getCurrentMonth, getCurrentYear, getMonthName } from '../utils/formatter.js';
 import dotenv from 'dotenv';
-import { gerarRecomendacoes, calcularScoreFinanceiro, gerarPlanejamentoProximoMes } from '../analysis/recommendations.js';
 dotenv.config();
 
 let sockInstance = null;
@@ -88,10 +87,6 @@ export function initScheduler(sock) {
       msg += metas + '\n\n';
 
       if (recomendacao) {
-        msg += `💡 *Análise do mês:*\n${recomendacao}`;
-      }
-
-      await sockInstance.sendMessage(groupId, { text: msg });if (recomendacao) {
         msg += `💡 *Análise do mês:*\n${recomendacao}\n\n`;
       }
 
