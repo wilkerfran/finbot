@@ -1,7 +1,10 @@
 import { google } from 'googleapis';
-import path from 'path';
+import { createRequire } from 'module';
 import dotenv from 'dotenv';
 dotenv.config();
+
+const require = createRequire(import.meta.url);
+const path = require('path');
 
 function getAuth() {
   if (process.env.GOOGLE_CREDENTIALS_JSON) {
