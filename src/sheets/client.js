@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -10,8 +11,6 @@ function getAuth() {
       scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
   }
-  // fallback local
-  import path from 'path';
   return new google.auth.GoogleAuth({
     keyFile: path.resolve('credentials/google-credentials.json'),
     scopes: ['https://www.googleapis.com/auth/spreadsheets']
