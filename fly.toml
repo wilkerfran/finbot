@@ -1,0 +1,12 @@
+app = "finbot-whatsapp"
+primary_region = "gru"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

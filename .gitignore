@@ -1,0 +1,7 @@
+node_modules/
+auth/
+credentials/
+.env
+*.log
+finbot.db
+auth.zip
