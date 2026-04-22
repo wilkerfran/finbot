@@ -5,6 +5,7 @@ import { comandoMeta } from '../commands/meta.js';
 import { gerarRecomendacoes, calcularScoreFinanceiro } from '../analysis/recommendations.js';
 import { getCurrentMonth, getCurrentYear, getMonthName } from '../utils/formatter.js';
 import dotenv from 'dotenv';
+import { gerarRecomendacoes, calcularScoreFinanceiro, gerarPlanejamentoProximoMes } from '../analysis/recommendations.js';
 dotenv.config();
 
 let sockInstance = null;
@@ -88,6 +89,15 @@ export function initScheduler(sock) {
 
       if (recomendacao) {
         msg += `💡 *Análise do mês:*\n${recomendacao}`;
+      }
+
+      await sockInstance.sendMessage(groupId, { text: msg });if (recomendacao) {
+        msg += `💡 *Análise do mês:*\n${recomendacao}\n\n`;
+      }
+
+      const planejamento = await gerarPlanejamentoProximoMes();
+      if (planejamento) {
+        msg += planejamento;
       }
 
       await sockInstance.sendMessage(groupId, { text: msg });
