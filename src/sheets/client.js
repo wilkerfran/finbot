@@ -1,14 +1,12 @@
 import { google } from 'googleapis';
-import { createRequire } from 'module';
+import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const require = createRequire(import.meta.url);
-const path = require('path');
-
 function getAuth() {
   if (process.env.GOOGLE_CREDENTIALS_JSON) {
-    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    const raw = process.env.GOOGLE_CREDENTIALS_JSON.replace(/^\uFEFF/, '').replace(/^\s+/, '').trim();
+    const credentials = JSON.parse(raw);
     return new google.auth.GoogleAuth({
       credentials,
       scopes: ['https://www.googleapis.com/auth/spreadsheets']
